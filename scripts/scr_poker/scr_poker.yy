@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_poker",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_poker",
+  "parent":{
+    "name":"class-card-game",
+    "path":"class-card-game.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

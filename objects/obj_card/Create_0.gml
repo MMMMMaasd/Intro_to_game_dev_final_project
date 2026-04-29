@@ -1,0 +1,12 @@
+card_rank   = 2;
+card_suit   = 0;
+card_sprite = -1;
+face_down   = false;
+target_x    = x;
+target_y    = y;
+hover_rise  = 0;
+selected    = false;
+in_hand     = true;
+slot_idx    = 0;
+card_w      = 65;
+card_h      = 95;
