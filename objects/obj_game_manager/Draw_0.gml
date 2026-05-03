@@ -2,19 +2,13 @@ draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
 draw_set_font(fnt_score);
 
-draw_set_color(make_color_rgb(6, 0, 0));
-draw_rectangle(0, 0, 800, 800, false);
-draw_set_color(make_color_rgb(20, 3, 3));
-draw_ellipse(20, 20, 780, 780, false);
-draw_set_color(make_color_rgb(90, 8, 8));
-draw_ellipse(25, 25, 775, 775, true);
-draw_set_color(make_color_rgb(45, 0, 0));
-draw_ellipse(55, 55, 745, 745, true);
+draw_sprite_stretched(spr_bg, 0, 0, 0, 800, 800);
 
 // ============================================================
 // MENU
 // ============================================================
 if (phase == PHASE_MENU) {
+    draw_sprite_stretched(spr_menu_bg, 0, 0, 0, 800, 800);
     draw_set_color(make_color_rgb(160, 10, 10));
     draw_text_transformed(400, 160, "DOOMTIDE", 7, 7, 0);
     draw_set_color(make_color_rgb(200, 60, 60));
@@ -37,6 +31,7 @@ if (phase == PHASE_MENU) {
 // GAME OVER
 // ============================================================
 if (phase == PHASE_GAMEOVER) {
+    draw_sprite_stretched(spr_gameover_bg, 0, 0, 0, 800, 800);
     draw_set_color(make_color_rgb(120, 0, 0));
     draw_text_transformed(400, 250, "CONSUMED", 7.5, 7.5, 0);
     draw_set_color(make_color_rgb(180, 30, 30));
@@ -54,6 +49,7 @@ if (phase == PHASE_GAMEOVER) {
 // WIN
 // ============================================================
 if (phase == PHASE_WIN) {
+    draw_sprite_stretched(spr_win_overlay, 0, 0, 0, 800, 800);
     draw_set_color(make_color_rgb(210, 180, 60));
     draw_text_transformed(400, 230, "SURVIVED", 7, 7, 0);
     draw_set_color(make_color_rgb(220, 220, 180));
@@ -71,13 +67,12 @@ if (phase == PHASE_WIN) {
 // JUMP SCARE
 // ============================================================
 if (phase == PHASE_JUMPSCARE) {
-    var _flash = 1.0 - (jumpscare_timer / 65.0);
-    var _ri    = min(255, round(80 + 175 * _flash));
-    draw_set_color(make_color_rgb(_ri, 0, 0));
-    draw_rectangle(0, 0, 800, 800, false);
+    var _flash  = 1.0 - (jumpscare_timer / 65.0);
+    var _frame  = min(5, jumpscare_timer div 10);
+    draw_sprite_stretched(spr_jumpscare, _frame, 0, 0, 800, 800);
     draw_set_color(c_white);
-    draw_set_alpha(min(1.0, _flash * 2.5));
-    draw_text_transformed(400, 400, current_scare_msg, 5.5 + _flash * 2, 5.5 + _flash * 2, 0);
+    draw_set_alpha(min(1.0, _flash * 2.2));
+    draw_text_transformed(400, 680, current_scare_msg, 3.5 + _flash, 3.5 + _flash, 0);
     draw_set_alpha(1);
     exit;
 }
@@ -156,9 +151,10 @@ if (phase == PHASE_SHOP) {
             draw_rectangle(_dx, 450, _dx + DC_W, 560, true);
 
             draw_set_color(make_color_rgb(230, 60, 60));
-            draw_text_transformed(_dx + DC_W / 2, 468, doom_names[_id], 0.95, 0.95, 0);
+            draw_text_transformed(_dx + DC_W / 2, 462, doom_names[_id], 0.92, 0.92, 0);
+            draw_sprite_stretched(doom_art[_id], 0, _dx + 6, 471, DC_W - 12, 30);
             draw_set_color(make_color_rgb(170, 110, 110));
-            draw_text_transformed(_dx + DC_W / 2, 498, doom_passives[_id], 0.6, 0.6, 0);
+            draw_text_transformed(_dx + DC_W / 2, 506, doom_passives[_id], 0.57, 0.57, 0);
             draw_set_alpha(0.85);
             draw_set_color(make_color_rgb(90, 8, 8));
             draw_rectangle(_dx + 5, 530, _dx + DC_W - 5, 555, false);
@@ -215,6 +211,9 @@ for (var _i = 0; _i < 10; _i++) {
 draw_set_color(make_color_rgb(210, 40, 40));
 draw_text_transformed(_seg_sx + _seg_tot + 34, _seg_y + _seg_h / 2,
     string(doom) + "/" + string(MAX_DOOM), 1.15, 1.15, 0);
+
+var _icon_frame = clamp(doom div 3, 0, 3);
+draw_sprite(spr_doom_meter_icon, _icon_frame, _seg_sx + _seg_tot + 70, _seg_y + _seg_h / 2);
 
 // Ante & Blind
 draw_set_color(make_color_rgb(255, 220, 80));
@@ -326,9 +325,16 @@ for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
         else                    { draw_set_color(make_color_rgb(230, 55, 55)); }
         draw_text_transformed(_ctr_x, _dy + 14, doom_names[_id], 0.9, 0.9, 0);
 
+        draw_sprite_stretched(doom_art[_id], 0, _dx + 8, _dy + 22, DC_W - 16, 36);
+
         draw_set_color(make_color_rgb(165, 115, 115));
-        draw_text_transformed(_ctr_x, _dy + 40, doom_passives[_id], 0.58, 0.58, 0);
-        draw_text_transformed(_ctr_x, _dy + 60, doom_channels[_id], 0.52, 0.52, 0);
+        draw_text_transformed(_ctr_x, _dy + 68, doom_passives[_id], 0.56, 0.56, 0);
+        draw_text_transformed(_ctr_x, _dy + 83, doom_channels[_id], 0.50, 0.50, 0);
+
+        if (doom_channeled[_i]) {
+            var _ff = (phase_timer mod 4);
+            draw_sprite_stretched(spr_invoke_flash, _ff, _dx, _dy, DC_W, DC_H);
+        }
 
         if (!doom_channeled[_i] && !doom_inhibited[_i] && doom < MAX_DOOM - 1) {
             var _btn_hov = point_in_rectangle(mouse_x, mouse_y,

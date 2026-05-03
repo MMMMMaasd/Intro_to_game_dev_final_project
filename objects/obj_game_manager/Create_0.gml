@@ -682,5 +682,22 @@ full_reset = function() {
     doom_count = 0;
 };
 
+doom_art = array_create(DOOM_CARD_COUNT, -1);
+doom_art[0]  = spr_doom_card_art_0;
+doom_art[1]  = spr_doom_card_art_1;
+doom_art[2]  = spr_doom_card_art_2;
+doom_art[3]  = spr_doom_card_art_3;
+doom_art[4]  = spr_doom_card_art_4;
+doom_art[5]  = spr_doom_card_art_5;
+doom_art[6]  = spr_doom_card_art_6;
+doom_art[7]  = spr_doom_card_art_7;
+doom_art[8]  = spr_doom_card_art_8;
+doom_art[9]  = spr_doom_card_art_9;
+doom_art[10] = spr_doom_card_art_10;
+doom_art[11] = spr_doom_card_art_11;
+doom_art[12] = spr_doom_card_art_12;
+doom_art[13] = spr_doom_card_art_13;
+doom_art[14] = spr_doom_card_art_14;
+
 var _bgm = audio_play_sound(snd_bgm, 0, true);
 audio_sound_gain(_bgm, 0.15, 0);
