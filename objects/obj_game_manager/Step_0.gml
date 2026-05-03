@@ -178,6 +178,11 @@ case PHASE_JUMPSCARE:
 
 case PHASE_ROUND_WIN:
     if (phase_timer > 90 || mouse_check_button_pressed(mb_left)) {
+        with (obj_card) instance_destroy();
+        for (var _i = 0; _i < MAX_HAND; _i++) hand_cards[_i] = noone;
+        for (var _i = 0; _i < MAX_PLAY; _i++) play_cards[_i] = noone;
+        hand_count = 0;
+        play_count = 0;
         setup_shop();
         phase       = PHASE_SHOP;
         phase_timer = 0;
