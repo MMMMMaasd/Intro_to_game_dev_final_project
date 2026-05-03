@@ -131,6 +131,25 @@ function shuffle_array(arr) {
     return arr;
 }
 
+function rank_display(rank) {
+    switch (rank) {
+        case 11: return "J";
+        case 12: return "Q";
+        case 13: return "K";
+        case 14: return "A";
+        default: return string(rank);
+    }
+}
+
+function suit_display(suit) {
+    switch (suit) {
+        case 0: return "Spades";
+        case 1: return "Hearts";
+        case 2: return "Diamonds";
+        default: return "Clubs";
+    }
+}
+
 function get_card_sprite(rank, suit) {
     switch (rank) {
         case 2:
