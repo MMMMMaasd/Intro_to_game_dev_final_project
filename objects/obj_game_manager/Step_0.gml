@@ -1,5 +1,51 @@
 phase_timer++;
 
+if (screen_shake_amt > 0) screen_shake_amt = max(0, screen_shake_amt - 0.4);
+
+var _in_battle = (phase == PHASE_PLAY || phase == PHASE_SCORING || phase == PHASE_JUMPSCARE);
+set_bgm_mode((_in_battle && is_boss_blind()) ? 1 : 0);
+set_breath(_in_battle && doom >= 7);
+
+if (phase == PHASE_PLAY && doom >= 8) {
+    heartbeat_timer++;
+    var _interval = 360;
+    if (doom >= 9) _interval = 180;
+    if (heartbeat_timer >= _interval) {
+        heartbeat_timer = 0;
+        screen_shake_amt = max(screen_shake_amt, 6);
+        add_doom(1);
+        audio_play_sound(snd_heartbeat, 1, false);
+    }
+}
+
+if (pending_jumpscare && phase == PHASE_PLAY) {
+    trigger_jumpscare(PHASE_PLAY);
+}
+
+hover_doom_slot = -1;
+if (phase == PHASE_PLAY) {
+    for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
+        if (doom_slots[_i] < 0) continue;
+        var _dx = get_doom_slot_x(_i);
+        var _dy = DOOM_Y - DC_H / 2;
+        if (point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + DC_W, _dy + DC_H)) {
+            hover_doom_slot = _i;
+            break;
+        }
+    }
+}
+hover_shop_slot = -1;
+if (phase == PHASE_SHOP) {
+    for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
+        if (doom_slots[_i] < 0) continue;
+        var _dx = get_doom_slot_x(_i);
+        if (point_in_rectangle(mouse_x, mouse_y, _dx, 450, _dx + DC_W, 580)) {
+            hover_shop_slot = _i;
+            break;
+        }
+    }
+}
+
 if (phase == PHASE_GAMEOVER || phase == PHASE_WIN) {
     if (mouse_check_button_pressed(mb_left)) {
         full_reset();
@@ -48,9 +94,9 @@ case PHASE_PLAY:
 
         for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
             if (doom_slots[_i] < 0 || doom_channeled[_i] || doom_inhibited[_i]) continue;
-            var _dx  = get_doom_slot_x(_i);
-            var _dy  = DOOM_Y - DC_H / 2;
-            if (point_in_rectangle(_mx, _my, _dx + 8, _dy + DC_H - 28, _dx + DC_W - 8, _dy + DC_H - 6)) {
+            var _dx = get_doom_slot_x(_i);
+            var _dy = DOOM_Y - DC_H / 2;
+            if (point_in_rectangle(_mx, _my, _dx + 8, _dy + DC_H - 30, _dx + DC_W - 8, _dy + DC_H - 6)) {
                 channel_doom_card(_i);
                 break;
             }
@@ -74,9 +120,9 @@ case PHASE_PLAY:
 
 case PHASE_SCORING:
     score_anim_timer++;
-    display_score = lerp(display_score, round_score, 0.07);
+    display_score = lerp(display_score, round_score, 0.1);
 
-    if (score_anim_timer >= 110) {
+    if (score_anim_timer >= 80) {
         display_score = round_score;
 
         if (doom >= MAX_DOOM) {
@@ -84,8 +130,7 @@ case PHASE_SCORING:
             phase_timer = 0;
             break;
         }
-
-        if (doom_active(9) && doom >= 8) {
+        if (doom_active(9) && doom >= 9) {
             phase       = PHASE_GAMEOVER;
             phase_timer = 0;
             break;
@@ -94,48 +139,30 @@ case PHASE_SCORING:
         if (round_score >= target_score) {
             var _earn = 4 + hands_left + discards_left;
             money     += _earn;
-            result_msg = "You Survived!   +$" + string(_earn);
-            if (!doom_active(13)) add_doom(-1);
+            result_msg = "You Survived...   +$" + string(_earn);
             clear_play_area();
-
-            if (random(1.0) < jumpscare_chance) {
-                post_scare_phase  = PHASE_ROUND_WIN;
-                current_scare_msg = scare_msgs[irandom(7)];
-                phase             = PHASE_JUMPSCARE;
-                phase_timer       = 0;
-                jumpscare_timer   = 0;
-            } else {
-                audio_play_sound(snd_win, 1, false);
-                phase       = PHASE_ROUND_WIN;
-                phase_timer = 0;
-            }
+            audio_play_sound(snd_win, 1, false);
+            phase       = PHASE_ROUND_WIN;
+            phase_timer = 0;
         } else if (hands_left <= 0) {
             result_msg = "The Darkness Claims You...";
             clear_play_area();
-
-            if (random(1.0) < jumpscare_chance) {
-                post_scare_phase  = PHASE_ROUND_LOSE;
-                current_scare_msg = scare_msgs[irandom(7)];
-                phase             = PHASE_JUMPSCARE;
-                phase_timer       = 0;
-                jumpscare_timer   = 0;
-            } else {
-                audio_play_sound(snd_lose, 1, false);
-                phase       = PHASE_ROUND_LOSE;
-                phase_timer = 0;
-            }
+            audio_play_sound(snd_lose, 1, false);
+            phase       = PHASE_ROUND_LOSE;
+            phase_timer = 0;
         } else {
+            var _force_scare = false;
+            if (doom_active(11) && !doom_channeled_id(11)) {
+                if (hands_played_round > 0 && (hands_played_round mod 3) == 0) _force_scare = true;
+            }
+
             apply_ghost_hand_passive();
             compact_hand();
             clear_play_area();
             deal_to_hand();
 
-            if (random(1.0) < jumpscare_chance) {
-                post_scare_phase  = PHASE_PLAY;
-                current_scare_msg = scare_msgs[irandom(7)];
-                phase             = PHASE_JUMPSCARE;
-                phase_timer       = 0;
-                jumpscare_timer   = 0;
+            if (_force_scare || pending_jumpscare) {
+                trigger_jumpscare(PHASE_PLAY);
             } else {
                 phase       = PHASE_PLAY;
                 phase_timer = 0;
@@ -146,16 +173,16 @@ case PHASE_SCORING:
 
 case PHASE_JUMPSCARE:
     jumpscare_timer++;
-    if (jumpscare_timer >= 65) {
+    if (jumpscare_timer >= JUMPSCARE_DUR) {
         if (jumpscare_protect) {
             last_mult  += 20;
             last_score  = last_chips * last_mult;
             jumpscare_protect = false;
         } else {
-            add_doom(2);
+            add_doom(1);
         }
 
-        if (doom >= MAX_DOOM || (doom_active(9) && doom >= 8)) {
+        if (doom >= MAX_DOOM || (doom_active(9) && doom >= 9)) {
             phase       = PHASE_GAMEOVER;
             phase_timer = 0;
             break;
@@ -206,7 +233,7 @@ case PHASE_SHOP:
             if (_bid < 0) continue;
             var _bx   = 200 + _i * 400;
             var _cost = shop_boon_costs[_bid];
-            if (point_in_rectangle(_mx, _my, _bx - 120, 190, _bx + 120, 380)) {
+            if (point_in_rectangle(_mx, _my, _bx - 130, 195, _bx + 130, 380)) {
                 if (money >= _cost) {
                     money -= _cost;
                     if (_bid == 0) { add_doom(-2); }
@@ -222,8 +249,8 @@ case PHASE_SHOP:
         for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
             if (doom_slots[_i] < 0) continue;
             var _dx   = get_doom_slot_x(_i);
-            var _cost = max(doom * 5, 5);
-            if (point_in_rectangle(_mx, _my, _dx, 450, _dx + DC_W, 560)) {
+            var _cost = max(doom * 2, 4);
+            if (point_in_rectangle(_mx, _my, _dx, 450, _dx + DC_W, 580)) {
                 if (money >= _cost) {
                     money            -= _cost;
                     doom_slots[_i]    = -1;
@@ -235,7 +262,7 @@ case PHASE_SHOP:
             }
         }
 
-        if (point_in_rectangle(_mx, _my, 300, 590, 500, 650)) {
+        if (point_in_rectangle(_mx, _my, 290, 720, 510, 780)) {
             blind_idx++;
             if (blind_idx >= 3) {
                 blind_idx = 0;

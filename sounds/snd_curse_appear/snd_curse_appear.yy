@@ -1,6 +1,6 @@
 {
   "$GMSound":"v2",
-  "%Name":"snd_win",
+  "%Name":"snd_curse_appear",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
@@ -10,9 +10,9 @@
   "compression":0,
   "compressionQuality":4,
   "conversionMode":0,
-  "duration":3.0240135,
+  "duration":1.8720181,
   "exportDir":"",
-  "name":"snd_win",
+  "name":"snd_curse_appear",
   "parent":{
     "name":"class-card-game",
     "path":"class-card-game.yyp",
@@ -21,6 +21,6 @@
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"snd_win.mp3",
+  "soundFile":"snd_curse_appear.mp3",
   "volume":1.0,
 }

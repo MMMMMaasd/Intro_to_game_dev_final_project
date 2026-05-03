@@ -19,23 +19,34 @@ CARD_W  = 65;
 CARD_H  = 95;
 HAND_Y  = 490;
 PLAY_Y  = 225;
-DC_W    = 110;
-DC_H    = 108;
-DC_GAP  = 12;
-DOOM_Y  = 635;
-BTN_Y   = 703;
+DC_W    = 130;
+DC_H    = 130;
+DC_GAP  = 14;
+DOOM_Y  = 625;
+BTN_Y   = 705;
 BTN_H   = 50;
 DECK_X  = 730;
 DECK_Y  = 750;
+
+screen_shake_amt = 0;
+heartbeat_timer  = 0;
+hover_doom_slot  = -1;
+hover_shop_slot  = -1;
 
 ante      = 1;
 blind_idx = 0;
 MAX_ANTE  = 3;
 
-blind_names = array_create(3, "");
+blind_names = array_create(9, "");
 blind_names[0] = "The Lurking";
-blind_names[1] = "The Wailing";
-blind_names[2] = "The Devouring";
+blind_names[1] = "The Hollow";
+blind_names[2] = "The Whisper";
+blind_names[3] = "The Wailing";
+blind_names[4] = "The Crawling";
+blind_names[5] = "The Watcher";
+blind_names[6] = "The Famished";
+blind_names[7] = "The Hungering";
+blind_names[8] = "The Devourer";
 
 ante_bases = array_create(3, 0);
 ante_bases[0] = 300;
@@ -46,6 +57,21 @@ blind_mults = array_create(3, 0);
 blind_mults[0] = 1.0;
 blind_mults[1] = 1.5;
 blind_mults[2] = 2.0;
+
+BOSS_NONE     = -1;
+BOSS_WHISPER  = 0;
+BOSS_WATCHER  = 1;
+BOSS_DEVOURER = 2;
+
+boss_passive_descs = array_create(3, "");
+boss_passive_descs[0] = "All card chip values are HALVED";
+boss_passive_descs[1] = "Each face card played: Doom+1.  -1 Discard";
+boss_passive_descs[2] = "Each hand played: Doom+1.  -1 Hand";
+
+boss_sprites = array_create(3, -1);
+boss_sprites[0] = spr_boss_whisper;
+boss_sprites[1] = spr_boss_watcher;
+boss_sprites[2] = spr_boss_devourer;
 
 hands_left     = 4;
 discards_left  = 3;
@@ -58,10 +84,13 @@ money = 4;
 
 doom     = 0;
 MAX_DOOM = 10;
+doom_thresholds_hit = array_create(11, false);
 
-jumpscare_chance  = 0.08;
 jumpscare_protect = false;
 jumpscare_timer   = 0;
+JUMPSCARE_DUR     = 32;
+pending_jumpscare = false;
+rounds_played     = 0;
 
 scare_msgs = array_create(8, "");
 scare_msgs[0] = "IT'S BEHIND YOU";
@@ -102,18 +131,18 @@ doom_names[14] = "Maggot Bet";
 doom_passives = array_create(DOOM_CARD_COUNT, "");
 doom_passives[0]  = "Round start: -1 Gold";
 doom_passives[1]  = "After each hand: lose a card";
-doom_passives[2]  = "Round start: 1 card frozen";
-doom_passives[3]  = "Flush played: Doom+3";
-doom_passives[4]  = "<4 cards played: Doom+2";
+doom_passives[2]  = "Round start: 1 card frozen, playing it Doom+1";
+doom_passives[3]  = "Flush played: Doom+2";
+doom_passives[4]  = "<4 cards played: Doom+1";
 doom_passives[5]  = "Round start: -2 Gold";
 doom_passives[6]  = "Round start: lose lowest card";
 doom_passives[7]  = "Round start: Hands-1 (min 1)";
 doom_passives[8]  = "Each face card played: Doom+1";
-doom_passives[9]  = "Doom>=8 at round end: death";
-doom_passives[10] = "Score<50% of target: Doom+1";
-doom_passives[11] = "Jumpscare chance +40%";
+doom_passives[9]  = "Doom>=9 at round end: instant death";
+doom_passives[10] = "Score<50% of target on play: Doom+1";
+doom_passives[11] = "Every 3 hands: forced jumpscare";
 doom_passives[12] = "One hand type forgotten/round";
-doom_passives[13] = "Doom never decreases on win";
+doom_passives[13] = "Win round: Doom does not decrease";
 doom_passives[14] = "Each hand played: Mult-1";
 
 doom_channels = array_create(DOOM_CARD_COUNT, "");
@@ -171,6 +200,7 @@ last_mult        = 0;
 last_score       = 0;
 score_anim_timer = 0;
 display_score    = 0;
+hands_played_round = 0;
 
 sort_mode      = 0;
 result_msg     = "";
@@ -184,9 +214,33 @@ sacrifice_rank    = -1;
 sacrifice_suit    = -1;
 
 add_doom = function(n) {
+    var _prev = doom;
     doom += n;
     if (doom > MAX_DOOM) doom = MAX_DOOM;
     if (doom < 0) doom = 0;
+    if (n > 0 && doom > _prev) {
+        audio_play_sound(snd_doom_rise, 5, false);
+        for (var _t = _prev + 1; _t <= doom; _t++) {
+            if (_t == 7 || _t == 9) {
+                if (!doom_thresholds_hit[_t]) {
+                    doom_thresholds_hit[_t] = true;
+                    pending_jumpscare = true;
+                }
+            }
+        }
+    }
+};
+
+trigger_jumpscare = function(post_phase) {
+    post_scare_phase  = post_phase;
+    current_scare_msg = scare_msgs[irandom(7)];
+    phase             = PHASE_JUMPSCARE;
+    phase_timer       = 0;
+    jumpscare_timer   = 0;
+    screen_shake_amt  = 12;
+    pending_jumpscare = false;
+    var _js = audio_play_sound(snd_jumpscare, 10, false);
+    audio_sound_gain(_js, 1.5, 0);
 };
 
 doom_active = function(id) {
@@ -220,6 +274,27 @@ get_play_card_x = function(slot, total) {
 
 get_target = function() {
     return round(ante_bases[ante - 1] * blind_mults[blind_idx]);
+};
+
+current_blind_name = function() {
+    return blind_names[(ante - 1) * 3 + blind_idx];
+};
+
+next_blind_label = function() {
+    var _bi = blind_idx + 1;
+    var _ai = ante;
+    if (_bi >= 3) { _bi = 0; _ai++; }
+    if (_ai > MAX_ANTE) return "FINAL";
+    return blind_names[(_ai - 1) * 3 + _bi];
+};
+
+is_boss_blind = function() {
+    return (blind_idx == 2);
+};
+
+current_boss_id = function() {
+    if (blind_idx != 2) return BOSS_NONE;
+    return ante - 1;
 };
 
 rebuild_deck = function() {
@@ -380,8 +455,11 @@ compute_score = function(cards_arr) {
     var _chips = _base[0];
     var _mult  = _base[1];
 
-    for (var _i = 0; _i < _n; _i++)
-        _chips += card_chip_value(cards_arr[_i].card_rank);
+    for (var _i = 0; _i < _n; _i++) {
+        var _v = card_chip_value(cards_arr[_i].card_rank);
+        if (current_boss_id() == BOSS_WHISPER) _v = ceil(_v / 2);
+        _chips += _v;
+    }
 
     var _face_count = 0;
     for (var _i = 0; _i < _n; _i++) {
@@ -391,7 +469,14 @@ compute_score = function(cards_arr) {
 
     if (doom_active(8)) {
         if (doom_channeled_id(8)) { _chips += _face_count * 60; }
-        else                      { add_doom(_face_count); }
+        else                      { if (_face_count > 0) add_doom(1); }
+    }
+
+    if (current_boss_id() == BOSS_WATCHER && _face_count > 0) {
+        add_doom(_face_count);
+    }
+    if (current_boss_id() == BOSS_DEVOURER) {
+        add_doom(1);
     }
 
     if (frozen_card_rank >= 0 && doom_active(2)) {
@@ -411,7 +496,7 @@ compute_score = function(cards_arr) {
 
     if (last_hand_type == 5 && doom_active(3)) {
         if (doom_channeled_id(3)) { midnight_auto_win = true; }
-        else                      { add_doom(3); }
+        else                      { add_doom(2); }
     }
 
     if (doom_channeled_id(4) && _n > 3) { _chips += (_n - 3) * 30; }
@@ -448,7 +533,7 @@ play_hand = function() {
     if (_n == 0) return;
 
     if (doom_active(4) && !doom_channeled_id(4) && _n < 4) {
-        add_doom(2);
+        add_doom(1);
     }
 
     play_count = _n;
@@ -479,6 +564,7 @@ play_hand = function() {
     } else {
         hands_left--;
     }
+    hands_played_round++;
 
     phase            = PHASE_SCORING;
     phase_timer      = 0;
@@ -507,6 +593,7 @@ apply_ghost_hand_passive = function() {
         instance_destroy(hand_cards[_pick]);
         hand_cards[_pick] = noone;
     }
+    add_doom(1);
 };
 
 channel_doom_card = function(slot) {
@@ -518,6 +605,8 @@ channel_doom_card = function(slot) {
 
     add_doom(2);
     doom_channeled[slot] = true;
+    var _iv = audio_play_sound(snd_invoke, 8, false);
+    audio_sound_gain(_iv, 1.0, 0);
 
     var _id = doom_slots[slot];
     if (_id == 1)  { hand_size_bonus += 4; }
@@ -566,17 +655,16 @@ add_doom_card = function() {
             doom_channeled[_slot] = false;
         }
     }
+    audio_play_sound(snd_curse_appear, 9, false);
 };
 
 apply_round_start_passives = function() {
-    jumpscare_chance = 0.08;
     for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
         var _id = doom_slots[_i];
         if (_id < 0 || doom_inhibited[_i]) continue;
         if (_id == 0)  money       = max(money - 1, 0);
         if (_id == 5)  money       = max(money - 2, 0);
         if (_id == 7)  hands_left  = max(hands_left - 1, 1);
-        if (_id == 11) jumpscare_chance += 0.4;
         if (_id == 12) forgotten_hand = irandom(8);
     }
 };
@@ -634,6 +722,8 @@ init_round = function() {
 
     hands_left     = 4 + extra_hands;
     discards_left  = 3 + extra_discards;
+    if (blind_idx == 2 && ante == 2) discards_left = max(0, discards_left - 1);
+    if (blind_idx == 2 && ante == 3) hands_left    = max(1, hands_left - 1);
     extra_hands    = 0;
     extra_discards = 0;
     round_score    = 0;
@@ -653,17 +743,33 @@ init_round = function() {
     last_score        = 0;
     display_score     = 0;
     score_anim_timer  = 0;
+    hands_played_round = 0;
+    heartbeat_timer   = 0;
 
     for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
         doom_channeled[_i] = false;
         doom_inhibited[_i] = false;
     }
 
-    add_doom_card();
+    for (var _i = 0; _i < 11; _i++) doom_thresholds_hit[_i] = false;
+    for (var _i = 0; _i <= doom; _i++) doom_thresholds_hit[_i] = true;
+
+    if (rounds_played >= 1) add_doom_card();
+    if (ante == 2) add_doom(2);
+    if (ante == 3) add_doom(3);
+    rounds_played++;
+
+    if (!doom_active(13)) add_doom(-1);
+
     apply_round_start_passives();
     rebuild_deck();
     deal_to_hand();
     apply_post_deal_passives();
+
+    if (is_boss_blind()) {
+        var _bs = audio_play_sound(snd_boss_appear, 8, false);
+        audio_sound_gain(_bs, 1.0, 0);
+    }
 };
 
 full_reset = function() {
@@ -674,12 +780,17 @@ full_reset = function() {
     hand_size_bonus   = 0;
     extra_hands       = 0;
     extra_discards    = 0;
+    heartbeat_timer   = 0;
+    pending_jumpscare = false;
+    rounds_played     = 0;
     for (var _i = 0; _i < MAX_DOOM_SLOTS; _i++) {
         doom_slots[_i]     = -1;
         doom_channeled[_i] = false;
         doom_inhibited[_i] = false;
     }
     doom_count = 0;
+    for (var _i = 0; _i < 11; _i++) doom_thresholds_hit[_i] = false;
+    doom_thresholds_hit[0] = true;
 };
 
 doom_art = array_create(DOOM_CARD_COUNT, -1);
@@ -699,5 +810,33 @@ doom_art[12] = spr_doom_card_art_12;
 doom_art[13] = spr_doom_card_art_13;
 doom_art[14] = spr_doom_card_art_14;
 
-var _bgm = audio_play_sound(snd_bgm, 0, true);
-audio_sound_gain(_bgm, 0.15, 0);
+bgm_main_inst = audio_play_sound(snd_bgm, 0, true);
+audio_sound_gain(bgm_main_inst, 0.15, 0);
+
+bgm_boss_inst = audio_play_sound(snd_bgm_boss, 0, true);
+audio_sound_gain(bgm_boss_inst, 0.0, 0);
+
+breath_inst = audio_play_sound(snd_ambience_breathing, 0, true);
+audio_sound_gain(breath_inst, 0.0, 0);
+
+current_bgm_mode = 0;
+current_breath_on = false;
+
+set_bgm_mode = function(boss_mode) {
+    if (boss_mode == current_bgm_mode) return;
+    current_bgm_mode = boss_mode;
+    if (boss_mode == 1) {
+        audio_sound_gain(bgm_main_inst, 0.0, 600);
+        audio_sound_gain(bgm_boss_inst, 0.22, 600);
+    } else {
+        audio_sound_gain(bgm_main_inst, 0.15, 600);
+        audio_sound_gain(bgm_boss_inst, 0.0, 600);
+    }
+};
+
+set_breath = function(on) {
+    if (on == current_breath_on) return;
+    current_breath_on = on;
+    if (on) audio_sound_gain(breath_inst, 0.35, 800);
+    else    audio_sound_gain(breath_inst, 0.0, 800);
+};

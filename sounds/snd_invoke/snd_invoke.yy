@@ -1,6 +1,6 @@
 {
   "$GMSound":"v2",
-  "%Name":"snd_win",
+  "%Name":"snd_invoke",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
@@ -10,9 +10,9 @@
   "compression":0,
   "compressionQuality":4,
   "conversionMode":0,
-  "duration":3.0240135,
+  "duration":3.192018,
   "exportDir":"",
-  "name":"snd_win",
+  "name":"snd_invoke",
   "parent":{
     "name":"class-card-game",
     "path":"class-card-game.yyp",
@@ -21,6 +21,6 @@
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"snd_win.mp3",
+  "soundFile":"snd_invoke.mp3",
   "volume":1.0,
 }

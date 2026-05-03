@@ -1,47 +1,90 @@
 function eval_5card(r5, s5) {
-    var r = [r5[0], r5[1], r5[2], r5[3], r5[4]];
-    for (var i = 0; i < 4; i++)
-        for (var j = 0; j < 4 - i; j++)
-            if (r[j] < r[j+1]) { var t = r[j]; r[j] = r[j+1]; r[j+1] = t; }
+    var r0 = r5[0]; var r1 = r5[1]; var r2 = r5[2]; var r3 = r5[3]; var r4 = r5[4];
+    var sr = [r0, r1, r2, r3, r4];
+    for (var _i = 0; _i < 4; _i++) {
+        for (var _j = 0; _j < 4 - _i; _j++) {
+            if (sr[_j] < sr[_j + 1]) {
+                var _t = sr[_j];
+                sr[_j] = sr[_j + 1];
+                sr[_j + 1] = _t;
+            }
+        }
+    }
 
-    var flush = (s5[0]==s5[1] && s5[1]==s5[2] && s5[2]==s5[3] && s5[3]==s5[4]);
-    var str = (r[0]-r[1]==1 && r[1]-r[2]==1 && r[2]-r[3]==1 && r[3]-r[4]==1);
-    var str_hi = r[0];
-    if (r[0]==14 && r[1]==5 && r[2]==4 && r[3]==3 && r[4]==2) { str=true; str_hi=5; }
+    var flush = (s5[0] == s5[1] && s5[1] == s5[2] && s5[2] == s5[3] && s5[3] == s5[4]);
 
     var cnt = array_create(15, 0);
-    for (var i = 0; i < 5; i++) cnt[r[i]]++;
+    cnt[sr[0]]++; cnt[sr[1]]++; cnt[sr[2]]++; cnt[sr[3]]++; cnt[sr[4]]++;
 
-    var four=-1, three=-1, p1=-1, p2=-1;
+    var four  = -1;
+    var three = -1;
+    var p_hi  = -1;
+    var p_lo  = -1;
     for (var rv = 14; rv >= 2; rv--) {
-        if (cnt[rv]==4) four=rv;
-        else if (cnt[rv]==3) three=rv;
-        else if (cnt[rv]==2) { if (p1==-1) p1=rv; else p2=rv; }
+        if (cnt[rv] == 4) four = rv;
+        else if (cnt[rv] == 3) three = rv;
+        else if (cnt[rv] == 2) {
+            if (p_hi == -1) p_hi = rv;
+            else if (p_lo == -1) p_lo = rv;
+        }
     }
 
-    if (flush && str) return [8, str_hi, 0,0,0,0];
+    var unique = 0;
+    for (var rv = 2; rv <= 14; rv++) if (cnt[rv] >= 1) unique++;
+
+    var is_straight = false;
+    var str_hi = 0;
+    if (unique == 5) {
+        if (sr[0] - sr[4] == 4) {
+            is_straight = true;
+            str_hi = sr[0];
+        } else if (sr[0] == 14 && sr[1] == 5 && sr[2] == 4 && sr[3] == 3 && sr[4] == 2) {
+            is_straight = true;
+            str_hi = 5;
+        }
+    }
+
+    if (flush && is_straight) return [8, str_hi, 0, 0, 0, 0];
     if (four != -1) {
-        var k=0; for (var rv=14;rv>=2;rv--) if (rv!=four&&cnt[rv]>0){k=rv;break;}
-        return [7, four, k, 0,0,0];
+        var k = 0;
+        for (var rv = 14; rv >= 2; rv--) {
+            if (rv != four && cnt[rv] > 0) { k = rv; break; }
+        }
+        return [7, four, k, 0, 0, 0];
     }
-    if (three!=-1 && p1!=-1) return [6, three, p1, 0,0,0];
-    if (flush) return [5, r[0],r[1],r[2],r[3],r[4]];
-    if (str) return [4, str_hi, 0,0,0,0];
+    if (three != -1 && p_hi != -1) return [6, three, p_hi, 0, 0, 0];
+    if (flush) return [5, sr[0], sr[1], sr[2], sr[3], sr[4]];
+    if (is_straight) return [4, str_hi, 0, 0, 0, 0];
     if (three != -1) {
-        var k0=0, k1=0, ki=0;
-        for (var rv=14;rv>=2;rv--) if (rv!=three&&cnt[rv]>0) { if(ki==0)k0=rv;else k1=rv; ki++; }
-        return [3, three, k0, k1, 0,0];
+        var k0 = 0; var k1 = 0; var ki = 0;
+        for (var rv = 14; rv >= 2; rv--) {
+            if (rv != three && cnt[rv] > 0) {
+                if (ki == 0) k0 = rv; else k1 = rv;
+                ki++;
+            }
+        }
+        return [3, three, k0, k1, 0, 0];
     }
-    if (p2 != -1) {
-        var k=0; for (var rv=14;rv>=2;rv--) if (rv!=p1&&rv!=p2&&cnt[rv]>0){k=rv;break;}
-        return [2, p1, p2, k, 0,0];
+    if (p_hi != -1 && p_lo != -1) {
+        var k = 0;
+        for (var rv = 14; rv >= 2; rv--) {
+            if (rv != p_hi && rv != p_lo && cnt[rv] > 0) { k = rv; break; }
+        }
+        return [2, p_hi, p_lo, k, 0, 0];
     }
-    if (p1 != -1) {
-        var k0=0, k1=0, k2=0, ki=0;
-        for (var rv=14;rv>=2;rv--) if (rv!=p1&&cnt[rv]>0) { if(ki==0)k0=rv;else if(ki==1)k1=rv;else k2=rv; ki++; }
-        return [1, p1, k0, k1, k2, 0];
+    if (p_hi != -1) {
+        var k0 = 0; var k1 = 0; var k2 = 0; var ki = 0;
+        for (var rv = 14; rv >= 2; rv--) {
+            if (rv != p_hi && cnt[rv] > 0) {
+                if (ki == 0) k0 = rv;
+                else if (ki == 1) k1 = rv;
+                else k2 = rv;
+                ki++;
+            }
+        }
+        return [1, p_hi, k0, k1, k2, 0];
     }
-    return [0, r[0],r[1],r[2],r[3],r[4]];
+    return [0, sr[0], sr[1], sr[2], sr[3], sr[4]];
 }
 
 function cmp_hand(a, b) {

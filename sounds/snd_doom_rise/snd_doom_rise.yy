@@ -1,6 +1,6 @@
 {
   "$GMSound":"v2",
-  "%Name":"snd_win",
+  "%Name":"snd_doom_rise",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
@@ -10,9 +10,9 @@
   "compression":0,
   "compressionQuality":4,
   "conversionMode":0,
-  "duration":3.0240135,
+  "duration":5.7469387,
   "exportDir":"",
-  "name":"snd_win",
+  "name":"snd_doom_rise",
   "parent":{
     "name":"class-card-game",
     "path":"class-card-game.yyp",
@@ -21,6 +21,6 @@
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"snd_win.mp3",
+  "soundFile":"snd_doom_rise.mp3",
   "volume":1.0,
 }

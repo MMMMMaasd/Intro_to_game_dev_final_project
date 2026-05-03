@@ -1,3 +1,8 @@
+if (instance_exists(obj_game_manager)) {
+    var _ph = obj_game_manager.phase;
+    if (_ph != obj_game_manager.PHASE_PLAY && _ph != obj_game_manager.PHASE_SCORING) exit;
+}
+
 var _x1 = x - card_w / 2;
 var _y1 = y - card_h / 2 - hover_rise;
 var _x2 = x + card_w / 2;

@@ -10,7 +10,7 @@
   "compression":0,
   "compressionQuality":4,
   "conversionMode":0,
-  "duration":6.0480046,
+  "duration":3.1869388,
   "exportDir":"",
   "name":"snd_lose",
   "parent":{
